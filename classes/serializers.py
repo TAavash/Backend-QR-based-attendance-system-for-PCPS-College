@@ -25,3 +25,27 @@ class RoutineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Routine
         fields = ["id", "day", "start_time", "end_time", "subject", "year", "section", "class_code"]
+
+class CreateClassSessionSerializer(serializers.ModelSerializer):
+    teacher_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+    student_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+
+    class Meta:
+        model = ClassSession
+        fields = ["subject", "year", "section", "class_code", "teacher_ids", "student_ids"]
+
+    def create(self, validated_data):
+        teacher_ids = validated_data.pop("teacher_ids", [])
+        student_ids = validated_data.pop("student_ids", [])
+
+        session = ClassSession.objects.create(**validated_data)
+
+        # Add teachers
+        if teacher_ids:
+            session.teachers.set(teacher_ids)
+
+        # Add students
+        if student_ids:
+            session.students.set(student_ids)
+
+        return session

@@ -5,7 +5,7 @@ from rest_framework import status
 
 from account.models import User
 from .models import ClassSession, Routine
-from .serializers import ClassSessionSerializer, RoutineSerializer
+from .serializers import ClassSessionSerializer, CreateClassSessionSerializer, RoutineSerializer
 
 class ClassSessionListAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -73,3 +73,16 @@ class StudentRoutineAPIView(APIView):
         routines = Routine.objects.filter(class_session__students=request.user)
         serializer = RoutineSerializer(routines, many=True)
         return Response(serializer.data)
+
+class CreateClassSessionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != "admin":
+            return Response({"error": "Admin only"}, status=403)
+
+        serializer = CreateClassSessionSerializer(data=request.data)
+        if serializer.is_valid():
+            session = serializer.save()
+            return Response({"message": "Class session created", "id": session.id})
+        return Response(serializer.errors, status=400)
