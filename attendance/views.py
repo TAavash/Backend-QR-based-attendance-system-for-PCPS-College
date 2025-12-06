@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
 from attendance.serializers import AttendanceSerializer
+from attendance.utils import decrypt_token, encrypt_token
 from classes.models import ClassSession
 from attendance.models import AttendanceQRCode, Attendance
 import uuid, qrcode, base64
@@ -37,7 +38,7 @@ class GenerateQRCodeAPIView(APIView):
         qr_img_base64 = base64.b64encode(buffer.getvalue()).decode()
 
         return Response({
-            "uuid": str(qr_uuid),
+            "uuid": encrypt_token(str(qr_uuid)),
             "qr_image": f"data:image/png;base64,{qr_img_base64}",
             "expires_at": expire_time
         })
@@ -50,21 +51,33 @@ class MarkAttendanceAPIView(APIView):
         if request.user.role != "student":
             return Response({"error": "Only students allowed"}, status=403)
 
+        # get encrypted token from request
         qr_uuid = request.data.get("qr_uuid")
+        if not qr_uuid:
+            return Response({"error": "qr_uuid is required"}, status=400)
+
+        # 🔥 NEW: decrypt the token
         try:
-            qr = AttendanceQRCode.objects.get(uuid=qr_uuid)
+            real_uuid = decrypt_token(qr_uuid)
+        except Exception:
+            return Response({"error": "Invalid QR Token"}, status=400)
+
+        # fetch QR entry using decrypted uuid
+        try:
+            qr = AttendanceQRCode.objects.get(uuid=real_uuid)
         except AttendanceQRCode.DoesNotExist:
             return Response({"error": "Invalid QR Code"}, status=400)
 
-        # FIXED — use timezone.now()
+        # check expiry
         if qr.expire_time < timezone.now():
             return Response({"error": "QR expired"}, status=400)
 
+        # mark attendance
         Attendance.objects.update_or_create(
             student=request.user,
             class_session=qr.class_session,
             date=timezone.now().date(),
-            defaults={"present": True}
+            defaults={"present": True},
         )
 
         return Response({"success": True, "message": "Attendance marked"})

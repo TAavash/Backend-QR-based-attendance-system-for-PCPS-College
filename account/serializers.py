@@ -21,11 +21,22 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+            
+    def validate_email(self, value):
+        if not value.endswith("@patancollege.edu.np"):
+            raise serializers.ValidationError("Email must be a patancollege.edu.np account.")
+        return value
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "uid", "role"]
+        
+    def validate_email(self, value):
+        if not value.endswith("@patancollege.edu.np"):
+            raise serializers.ValidationError("Email must be a patancollege.edu.np account.")
+        return value
 
 class PasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField()
