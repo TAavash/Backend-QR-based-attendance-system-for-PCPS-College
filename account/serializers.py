@@ -21,3 +21,12 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "uid", "role"]
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField()
+    new_password = serializers.CharField()

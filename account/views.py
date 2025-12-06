@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from account.models import User
-from account.serializers import AdminCreateUserSerializer
+from account.serializers import AdminCreateUserSerializer, PasswordChangeSerializer, ProfileSerializer
 
 class LoginAPIView(APIView):
 
@@ -43,3 +43,41 @@ class AdminCreateUserAPIView(APIView):
             serializer.save()
             return Response({"message": "User created successfully"})
         return Response(serializer.errors, status=400)
+
+class ProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(ProfileSerializer(request.user).data)
+
+class UpdateProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+        serializer = ProfileSerializer(user, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated"})
+        return Response(serializer.errors, status=400)
+
+class ChangePasswordAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        serializer = PasswordChangeSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        old_pw = serializer.validated_data["old_password"]
+        new_pw = serializer.validated_data["new_password"]
+
+        if not request.user.check_password(old_pw):
+            return Response({"error": "Old password incorrect"}, status=400)
+
+        request.user.set_password(new_pw)
+        request.user.save()
+
+        return Response({"message": "Password changed successfully"})
