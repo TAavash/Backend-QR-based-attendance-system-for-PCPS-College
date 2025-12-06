@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from account.models import User
-from .models import ClassSession
-from .serializers import ClassSessionSerializer
+from .models import ClassSession, Routine
+from .serializers import ClassSessionSerializer, RoutineSerializer
 
 class ClassSessionListAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -51,3 +51,25 @@ class AssignUsersToClassAPIView(APIView):
         return Response({
             "message": "Users assigned successfully"
         })
+
+class TeacherRoutineAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != "teacher":
+            return Response({"error": "Only teachers allowed"}, status=403)
+
+        routines = Routine.objects.filter(class_session__teachers=request.user)
+        serializer = RoutineSerializer(routines, many=True)
+        return Response(serializer.data)
+
+class StudentRoutineAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != "student":
+            return Response({"error": "Only students allowed"}, status=403)
+
+        routines = Routine.objects.filter(class_session__students=request.user)
+        serializer = RoutineSerializer(routines, many=True)
+        return Response(serializer.data)

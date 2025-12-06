@@ -13,3 +13,13 @@ class ClassSession(models.Model):
 
     def __str__(self):
         return f"{self.subject.name} - {self.class_code}"
+
+
+class Routine(models.Model):
+    class_session = models.ForeignKey(ClassSession, on_delete=models.CASCADE)
+    day = models.CharField(max_length=20)  # Monday, Tuesday...
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.day} - {self.class_session.class_code}"
