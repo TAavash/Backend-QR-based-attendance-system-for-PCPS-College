@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
+from attendance.serializers import AttendanceSerializer
 from classes.models import ClassSession
 from attendance.models import AttendanceQRCode, Attendance
 import uuid, qrcode, base64
@@ -138,3 +139,14 @@ class ViewAttendanceAPIView(APIView):
             },
             "attendance": attendance_list
         })
+
+class StudentHistoryAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != "student":
+            return Response({"error": "Only students allowed"}, status=403)
+
+        attendance = Attendance.objects.filter(student=request.user)
+        serializer = AttendanceSerializer(attendance, many=True)
+        return Response(serializer.data)
