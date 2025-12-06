@@ -9,3 +9,8 @@ class ClassSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClassSession
         fields = ["id", "class_code", "subject", "year", "section"]
+        
+class AssignUsersSerializer(serializers.Serializer):
+    class_id = serializers.IntegerField()
+    teacher_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+    student_ids = serializers.ListField(child=serializers.IntegerField(), required=False)

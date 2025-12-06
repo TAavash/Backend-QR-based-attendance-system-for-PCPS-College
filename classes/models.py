@@ -8,6 +8,8 @@ class ClassSession(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
     class_code = models.CharField(max_length=50)
     teachers = models.ManyToManyField(User, limit_choices_to={'role': 'teacher'})
+    students = models.ManyToManyField(User, related_name="student_classes", limit_choices_to={'role': 'student'}, blank=True)
+
 
     def __str__(self):
         return f"{self.subject.name} - {self.class_code}"
