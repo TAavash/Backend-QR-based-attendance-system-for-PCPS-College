@@ -1,0 +1,6 @@
+# DEV MODE FLAG
+DEV_MODE = True   # set to False in production
+
+COLLEGE_LAT = 27.6720
+COLLEGE_LNG = 85.3110
+GEOFENCE_RADIUS_METERS = 120

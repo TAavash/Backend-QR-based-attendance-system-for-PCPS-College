@@ -2,8 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
+from attendance.constants import COLLEGE_LAT, COLLEGE_LNG, DEV_MODE, GEOFENCE_RADIUS_METERS
 from attendance.serializers import AttendanceSerializer
-from attendance.utils import decrypt_token, encrypt_token
+from attendance.utils import decrypt_token, distance_m, encrypt_token
 from classes.models import ClassSession
 from attendance.models import AttendanceQRCode, Attendance
 import uuid, qrcode, base64
@@ -51,28 +52,43 @@ class MarkAttendanceAPIView(APIView):
         if request.user.role != "student":
             return Response({"error": "Only students allowed"}, status=403)
 
-        # get encrypted token from request
+        # 1. Get encrypted UUID
         qr_uuid = request.data.get("qr_uuid")
         if not qr_uuid:
             return Response({"error": "qr_uuid is required"}, status=400)
 
-        # 🔥 NEW: decrypt the token
+        # 2. Decrypt token
         try:
             real_uuid = decrypt_token(qr_uuid)
         except Exception:
             return Response({"error": "Invalid QR Token"}, status=400)
 
-        # fetch QR entry using decrypted uuid
+        # 3. Fetch QR object
         try:
             qr = AttendanceQRCode.objects.get(uuid=real_uuid)
         except AttendanceQRCode.DoesNotExist:
             return Response({"error": "Invalid QR Code"}, status=400)
 
-        # check expiry
+        # 4. Check expiry
         if qr.expire_time < timezone.now():
             return Response({"error": "QR expired"}, status=400)
 
-        # mark attendance
+        # 5. Geofencing (bypassed if DEV_MODE=True)
+        if not DEV_MODE:
+            try:
+                lat = float(request.data.get("lat"))
+                lng = float(request.data.get("lng"))
+            except (TypeError, ValueError):
+                return Response({"error": "lat and lng are required"}, status=400)
+
+            # Check if inside campus radius
+            if distance_m(lat, lng, COLLEGE_LAT, COLLEGE_LNG) > GEOFENCE_RADIUS_METERS:
+                return Response(
+                    {"error": "You are outside the campus. Attendance blocked."},
+                    status=400
+                )
+
+        # 6. Mark attendance
         Attendance.objects.update_or_create(
             student=request.user,
             class_session=qr.class_session,
@@ -81,7 +97,7 @@ class MarkAttendanceAPIView(APIView):
         )
 
         return Response({"success": True, "message": "Attendance marked"})
-
+    
 class ViewAttendanceAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
