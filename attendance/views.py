@@ -25,7 +25,7 @@ class GenerateQRCodeAPIView(APIView):
             return Response({"error": "Invalid class id"}, status=400)
 
         qr_uuid = uuid.uuid4()
-        expire_time = datetime.now() + timedelta(minutes=60)
+        expire_time = datetime.now() + timedelta(minutes=2)
 
         AttendanceQRCode.objects.create(
             uuid=qr_uuid,
