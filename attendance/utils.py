@@ -28,7 +28,7 @@ def decrypt_token(token: str) -> str:
     """Decrypts encrypted Fernet token. Raises exception if invalid."""
     return cipher.decrypt(token.encode()).decode()
 
-# 3. DISTANCE CALCULATOR (Haversine formula)
+# 3. DISTANCE CALCULATOR
 
 def distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """

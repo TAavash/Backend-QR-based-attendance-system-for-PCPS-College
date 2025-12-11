@@ -13,3 +13,7 @@ class Attendance(models.Model):
     class_session = models.ForeignKey(ClassSession, on_delete=models.CASCADE)
     date = models.DateField(auto_now_add=True)
     present = models.BooleanField(default=False)
+    
+    lat = models.FloatField(null=True, blank=True)
+    lng = models.FloatField(null=True, blank=True)
+    distance_from_college = models.FloatField(null=True, blank=True)
